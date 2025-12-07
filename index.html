@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loan Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 data-i18n="title">ម៉ាស៊ីនគណនាប្រាក់កម្ចី</h1>
+      <div class="language-selector">
+        <button id="langKm" class="lang-btn active">ខ្មែរ</button>
+        <button id="langEn" class="lang-btn">English</button>
+      </div>
+    </div>
+
+    <div class="calculator-form">
+      <div class="form-group">
+        <label for="customerName" data-i18n="customerName">ឈ្មោះអតិថិជន</label>
+        <input type="text" id="customerName" data-i18n-placeholder="customerNamePlaceholder">
+      </div>
+
+      <div class="form-group">
+        <label for="issuerName" data-i18n="issuerName">ឈ្មោះអ្នកផ្តល់កម្ចី</label>
+        <input type="text" id="issuerName" data-i18n-placeholder="issuerNamePlaceholder">
+      </div>
+
+      <div class="form-group">
+        <label for="loanAmount" data-i18n="loanAmount">ចំនួនទឹកប្រាក់កម្ចី ($)</label>
+        <input type="number" id="loanAmount" data-i18n-placeholder="loanAmountPlaceholder" min="0" step="1000">
+      </div>
+
+      <div class="form-group">
+        <label for="interestRate" data-i18n="interestRate">អត្រាការប្រាក់ប្រចាំឆ្នាំ (%)</label>
+        <input type="number" id="interestRate" data-i18n-placeholder="interestRatePlaceholder" min="0" max="100" step="0.01">
+      </div>
+
+      <div class="form-group">
+        <label for="loanTerm" data-i18n="loanTerm">រយៈពេលប្រាក់កម្ចី (ឆ្នាំ)</label>
+        <input type="number" id="loanTerm" data-i18n-placeholder="loanTermPlaceholder" min="1" max="50" step="1">
+      </div>
+
+      <div class="form-group">
+        <label for="startDate" data-i18n="startDate">កាលបរិច្ឆេទចាប់ផ្តើម</label>
+        <input type="date" id="startDate">
+      </div>
+
+      <div class="btn-container">
+        <button id="calculateBtn" class="btn-calculate" data-i18n="calculate">គណនា</button>
+        <button id="clearBtn" class="btn-clear" data-i18n="clear">សម្អាត</button>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="results-header">
+        <h2 data-i18n="results">លទ្ធផល</h2>
+        <button id="downloadBtn" class="btn-download" data-i18n="downloadReport">ទាញយករបាយការណ៍</button>
+      </div>
+
+      <div class="results-grid">
+        <div class="result-item">
+          <span class="result-label" data-i18n="customer">អតិថិជន:</span>
+          <span class="result-value" id="customerResult">-</span>
+        </div>
+
+        <div class="result-item">
+          <span class="result-label" data-i18n="issuer">អ្នកផ្តល់កម្ចី:</span>
+          <span class="result-value" id="issuerResult">-</span>
+        </div>
+
+        <div class="result-item">
+          <span class="result-label" data-i18n="startDateLabel">កាលបរិច្ឆេទចាប់ផ្តើម:</span>
+          <span class="result-value" id="startDateResult">-</span>
+        </div>
+
+        <div class="result-item">
+          <span class="result-label" data-i18n="finalPaymentDate">កាលបរិច្ឆេទបង់ចុងក្រោយ:</span>
+          <span class="result-value" id="endDateResult">-</span>
+        </div>
+
+        <div class="result-item">
+          <span class="result-label" data-i18n="monthlyPayment">ការទូទាត់ប្រចាំខែ:</span>
+          <span class="result-value" id="monthlyPayment">$0.00</span>
+        </div>
+
+        <div class="result-item">
+          <span class="result-label" data-i18n="totalPayment">ការទូទាត់សរុប:</span>
+          <span class="result-value" id="totalPayment">$0.00</span>
+        </div>
+
+        <div class="result-item">
+          <span class="result-label" data-i18n="totalInterest">ការប្រាក់សរុប:</span>
+          <span class="result-value" id="totalInterest">$0.00</span>
+        </div>
+      </div>
+
+      <div class="amortization-section">
+        <h3 data-i18n="amortizationSchedule">តារាងសងប្រាក់</h3>
+        <div class="table-container">
+          <table id="amortizationTable">
+            <thead>
+              <tr>
+                <th data-i18n="orderNumber">#</th>
+                <th data-i18n="date">កាលបរិច្ឆេទ</th>
+                <th data-i18n="payment">ការទូទាត់</th>
+                <th data-i18n="principal">ប្រាក់ដើម</th>
+                <th data-i18n="interest">ការប្រាក់</th>
+                <th data-i18n="balance">សមតុល្យ</th>
+              </tr>
+            </thead>
+            <tbody id="amortizationBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <div class="history-header">
+        <h2 data-i18n="savedHistory">ប្រវត្តិដែលបានរក្សាទុក</h2>
+        <button id="clearHistoryBtn" class="btn-clear-history" data-i18n="clearAllHistory">លុបប្រវត្តិទាំងអស់</button>
+      </div>
+      <div id="historyList" class="history-list">
+        <p class="history-empty" data-i18n="noSavedCalculations">មិនទាន់មានការគណនាដែលបានរក្សាទុកនៅឡើយទេ។ ទាញយករបាយការណ៍ ដើម្បីរក្សាទុកវាទៅក្នុងប្រវត្តិ។</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF Preview Modal -->
+  <div id="pdfPreviewModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 data-i18n="previewPDF">Preview PDF</h2>
+        <span class="modal-close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="pdfPreviewContent" class="pdf-preview-container"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="adjustPdfBtn" class="btn-adjust" data-i18n="adjustSettings">Adjust Settings</button>
+        <button id="downloadImageBtn" class="btn-download-image" data-i18n="downloadAsImage">Download as Image</button>
+        <button id="confirmDownloadBtn" class="btn-confirm-download" data-i18n="confirmDownload">Confirm & Download</button>
+        <button id="cancelPreviewBtn" class="btn-cancel" data-i18n="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
