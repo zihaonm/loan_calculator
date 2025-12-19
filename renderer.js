@@ -13,6 +13,7 @@ const translations = {
     loanTerm: 'រយៈពេលប្រាក់កម្ចី (ឆ្នាំ)',
     loanTermPlaceholder: 'ឧទា. 30',
     startDate: 'កាលបរិច្ឆេទចាប់ផ្តើម',
+    issueDate: 'កាលបរិច្ឆេទចេញឯកសារ',
     telegramReminders: 'ការរំលឹកតាម Telegram',
     telegramUsername: 'Telegram Username អតិថិជន',
     telegramUsernamePlaceholder: '@username',
@@ -116,6 +117,7 @@ const translations = {
     loanTerm: 'Loan Term (years)',
     loanTermPlaceholder: 'e.g., 30',
     startDate: 'Start Date',
+    issueDate: 'Issue Date',
     telegramReminders: 'Telegram Reminders',
     telegramUsername: 'Customer Telegram Username',
     telegramUsernamePlaceholder: '@username',
@@ -220,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const interestRateInput = document.getElementById('interestRate');
   const loanTermInput = document.getElementById('loanTerm');
   const startDateInput = document.getElementById('startDate');
+  const issueDateInput = document.getElementById('issueDate');
   const langKmBtn = document.getElementById('langKm');
   const langEnBtn = document.getElementById('langEn');
 
@@ -282,9 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Disable download button initially
   downloadBtn.disabled = true;
 
-  // Set default start date to today
+  // Set default start date and issue date to today
   const today = new Date();
   startDateInput.value = today.toISOString().split('T')[0];
+  issueDateInput.value = today.toISOString().split('T')[0];
 
   // Initialize language
   switchLanguage(currentLang);
@@ -333,9 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const annualRate = parseFloat(interestRateInput.value);
     const loanTermYears = parseFloat(loanTermInput.value);
     const startDateValue = startDateInput.value;
+    const issueDateValue = issueDateInput.value;
 
     // Validate inputs
-    if (!customerName || !issuerName || !loanAmount || !annualRate || !loanTermYears || !startDateValue) {
+    if (!customerName || !issuerName || !loanAmount || !annualRate || !loanTermYears || !startDateValue || !issueDateValue) {
       alert(t('alertFillAllFields'));
       return;
     }
@@ -346,6 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const startDate = new Date(startDateValue);
+    const issueDate = new Date(issueDateValue);
 
     // Calculate monthly payment
     const monthlyRate = annualRate / 100 / 12;
@@ -398,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
       annualRate,
       loanTermYears,
       startDate,
+      issueDate,
       endDate,
       monthlyPayment,
       totalPayment,
@@ -597,6 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ...data,
       // Convert dates to ISO strings for storage
       startDate: data.startDate.toISOString(),
+      issueDate: data.issueDate.toISOString(),
       endDate: data.endDate.toISOString(),
       amortizationSchedule: data.amortizationSchedule.map(entry => ({
         ...entry,
@@ -704,6 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
     interestRateInput.value = entry.annualRate;
     loanTermInput.value = entry.loanTermYears;
     startDateInput.value = new Date(entry.startDate).toISOString().split('T')[0];
+    issueDateInput.value = entry.issueDate ? new Date(entry.issueDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
     // Load Telegram data
     telegramUsernameInput.value = entry.telegramUsername || '';
@@ -727,6 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = {
       ...entry,
       startDate: new Date(entry.startDate),
+      issueDate: new Date(entry.issueDate || entry.timestamp), // fallback to timestamp for old entries
       endDate: new Date(entry.endDate),
       amortizationSchedule: entry.amortizationSchedule.map(item => ({
         ...item,
@@ -926,9 +936,10 @@ document.addEventListener('DOMContentLoaded', () => {
     reminderDaysBeforeInput.value = '3';
     enableRemindersCheckbox.checked = true;
 
-    // Reset start date to today
+    // Reset start date and issue date to today
     const today = new Date();
     startDateInput.value = today.toISOString().split('T')[0];
+    issueDateInput.value = today.toISOString().split('T')[0];
 
     document.getElementById('customerResult').textContent = '-';
     document.getElementById('issuerResult').textContent = '-';
@@ -972,7 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function generatePDFContent(data) {
     // Generate invoice number
     const invoiceNumber = `LOAN-${Date.now().toString().slice(-8)}`;
-    const generatedDate = new Date().toLocaleDateString(currentLang === 'km' ? 'km-KH' : 'en-US', {
+    const issueDateFormatted = data.issueDate.toLocaleDateString(currentLang === 'km' ? 'km-KH' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -1023,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="pdf-info-box">
           <div><strong>${t('pdfAgreementNo')}</strong> ${invoiceNumber}</div>
-          <div><strong>${t('pdfDateIssued')}</strong> ${generatedDate}</div>
+          <div><strong>${t('pdfDateIssued')}</strong> ${issueDateFormatted}</div>
         </div>
 
         <div class="pdf-parties">
