@@ -13,6 +13,13 @@ const translations = {
     loanTerm: 'រយៈពេលប្រាក់កម្ចី (ឆ្នាំ)',
     loanTermPlaceholder: 'ឧទា. 30',
     startDate: 'កាលបរិច្ឆេទចាប់ផ្តើម',
+    telegramReminders: 'ការរំលឹកតាម Telegram',
+    telegramUsername: 'Telegram Username អតិថិជន',
+    telegramUsernamePlaceholder: '@username',
+    reminderDaysBefore: 'ផ្ញើការរំលឹកមុនកាលកំណត់',
+    reminderDaysBeforePlaceholder: 'ចំនួនថ្ងៃ',
+    reminderDaysHint: 'ចំនួនថ្ងៃមុនកាលកំណត់ (0 = ថ្ងៃចំណាយប៉ុណ្ណោះ)',
+    enableReminders: 'បើកការរំលឹកស្វ័យប្រវត្តិ',
     calculate: 'គណនា',
     clear: 'សម្អាត',
     results: 'លទ្ធផល',
@@ -45,6 +52,19 @@ const translations = {
     historyRate: 'អត្រា:',
     historyTerm: 'រយៈពេល:',
     historyYears: 'ឆ្នាំ',
+    telegramSettings: 'ការកំណត់ Telegram Bot',
+    telegramSettingsInfo: 'ដើម្បីប្រើការរំលឹកតាម Telegram អ្នកត្រូវបង្កើត Telegram Bot និងបញ្ចូល Bot Token។ សូមទៅកាន់ @BotFather លើ Telegram ដើម្បីបង្កើត Bot ថ្មី។',
+    createBot: 'បង្កើត Bot ជាមួយ @BotFather',
+    botToken: 'Telegram Bot Token',
+    botTokenPlaceholder: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
+    saveBotToken: 'រក្សាទុក Token',
+    testBot: 'សាកល្បង Bot',
+    viewReminders: 'មើលការរំលឹកខាងមុខ',
+    upcomingReminders: 'ការរំលឹកខាងមុខ (30 ថ្ងៃ)',
+    noUpcomingReminders: 'មិនមានការរំលឹកខាងមុខនៅឡើយទេ។',
+    dueToday: 'ថ្ងៃនេះ',
+    dueIn: 'នៅសល់',
+    days: 'ថ្ងៃ',
     pdfTitle: 'កិច្ចព្រមព្រៀងប្រាក់កម្ចី',
     pdfSubtitle: 'កាលវិភាគការទូទាត់ និងលក្ខខណ្ឌ',
     pdfAgreementNo: 'លេខកិច្ចព្រមព្រៀង:',
@@ -96,6 +116,13 @@ const translations = {
     loanTerm: 'Loan Term (years)',
     loanTermPlaceholder: 'e.g., 30',
     startDate: 'Start Date',
+    telegramReminders: 'Telegram Reminders',
+    telegramUsername: 'Customer Telegram Username',
+    telegramUsernamePlaceholder: '@username',
+    reminderDaysBefore: 'Send reminder before payment',
+    reminderDaysBeforePlaceholder: 'Number of days',
+    reminderDaysHint: 'Number of days before payment (0 = payment day only)',
+    enableReminders: 'Enable automatic reminders',
     calculate: 'Calculate',
     clear: 'Clear',
     results: 'Results',
@@ -128,6 +155,19 @@ const translations = {
     historyRate: 'Rate:',
     historyTerm: 'Term:',
     historyYears: 'years',
+    telegramSettings: 'Telegram Bot Settings',
+    telegramSettingsInfo: 'To use Telegram reminders, you need to create a Telegram Bot and enter the Bot Token. Go to @BotFather on Telegram to create a new bot.',
+    createBot: 'Create Bot with @BotFather',
+    botToken: 'Telegram Bot Token',
+    botTokenPlaceholder: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
+    saveBotToken: 'Save Token',
+    testBot: 'Test Bot',
+    viewReminders: 'View Upcoming Reminders',
+    upcomingReminders: 'Upcoming Reminders (30 days)',
+    noUpcomingReminders: 'No upcoming reminders.',
+    dueToday: 'Due Today',
+    dueIn: 'Due in',
+    days: 'days',
     pdfTitle: 'LOAN AGREEMENT',
     pdfSubtitle: 'Payment Schedule & Terms',
     pdfAgreementNo: 'Agreement No:',
@@ -183,18 +223,51 @@ document.addEventListener('DOMContentLoaded', () => {
   const langKmBtn = document.getElementById('langKm');
   const langEnBtn = document.getElementById('langEn');
 
+  // Telegram elements
+  const telegramUsernameInput = document.getElementById('telegramUsername');
+  const reminderDaysBeforeInput = document.getElementById('reminderDaysBefore');
+  const enableRemindersCheckbox = document.getElementById('enableReminders');
+
+  // Telegram settings elements
+  const botTokenInput = document.getElementById('botToken');
+  const saveBotTokenBtn = document.getElementById('saveBotTokenBtn');
+  const testBotBtn = document.getElementById('testBotBtn');
+  const viewRemindersBtn = document.getElementById('viewRemindersBtn');
+  const botStatus = document.getElementById('botStatus');
+
+  // Reminders section elements
+  const remindersSection = document.getElementById('remindersSection');
+  const closeRemindersBtn = document.getElementById('closeRemindersBtn');
+
   // Store calculation data for download
   let calculationData = null;
   let currentLoanId = null; // Track current loan ID for history updates
 
+  // Initialize scheduler
+  const scheduler = new ReminderScheduler();
+
   // Load saved language preference
   currentLang = localStorage.getItem('language') || 'km';
+
+  // Load saved bot token
+  const savedBotToken = localStorage.getItem('telegramBotToken');
+  if (savedBotToken) {
+    botTokenInput.value = savedBotToken;
+  }
 
   calculateBtn.addEventListener('click', calculateLoan);
   clearBtn.addEventListener('click', clearForm);
   downloadBtn.addEventListener('click', downloadReport);
   langKmBtn.addEventListener('click', () => switchLanguage('km'));
   langEnBtn.addEventListener('click', () => switchLanguage('en'));
+
+  // Telegram event listeners
+  saveBotTokenBtn.addEventListener('click', saveBotToken);
+  testBotBtn.addEventListener('click', testBot);
+  viewRemindersBtn.addEventListener('click', viewUpcomingReminders);
+  closeRemindersBtn.addEventListener('click', () => {
+    remindersSection.style.display = 'none';
+  });
 
   // Reset loan ID when user manually changes form inputs (creates new loan instead of updating)
   [customerNameInput, issuerNameInput, loanAmountInput, interestRateInput, loanTermInput, startDateInput].forEach(input => {
@@ -330,7 +403,12 @@ document.addEventListener('DOMContentLoaded', () => {
       totalPayment,
       totalInterest,
       numberOfPayments,
-      amortizationSchedule
+      amortizationSchedule,
+      // Telegram fields
+      telegramUsername: telegramUsernameInput.value.trim(),
+      reminderDaysBefore: parseInt(reminderDaysBeforeInput.value) || 0,
+      enableReminders: enableRemindersCheckbox.checked,
+      language: currentLang
     };
 
     // Enable download button
@@ -627,6 +705,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loanTermInput.value = entry.loanTermYears;
     startDateInput.value = new Date(entry.startDate).toISOString().split('T')[0];
 
+    // Load Telegram data
+    telegramUsernameInput.value = entry.telegramUsername || '';
+    reminderDaysBeforeInput.value = entry.reminderDaysBefore || 3;
+    enableRemindersCheckbox.checked = entry.enableReminders !== false;
+
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -681,12 +764,167 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearHistoryBtn = document.getElementById('clearHistoryBtn');
   clearHistoryBtn.addEventListener('click', clearAllHistory);
 
+  // Telegram Bot Functions
+  async function saveBotToken() {
+    const token = botTokenInput.value.trim();
+
+    if (!token) {
+      showBotStatus('error', currentLang === 'km' ? 'សូមបញ្ចូល Bot Token' : 'Please enter a Bot Token');
+      return;
+    }
+
+    showBotStatus('info', currentLang === 'km' ? 'កំពុងផ្ទៀងផ្ទាត់...' : 'Validating...');
+
+    const bot = new TelegramBot(token);
+    const result = await bot.validateToken();
+
+    if (result.valid) {
+      localStorage.setItem('telegramBotToken', token);
+      showBotStatus('success',
+        currentLang === 'km'
+          ? `✅ បានរក្សាទុក! Bot: ${result.botInfo.first_name} (@${result.botInfo.username})`
+          : `✅ Token saved! Bot: ${result.botInfo.first_name} (@${result.botInfo.username})`
+      );
+    } else {
+      showBotStatus('error',
+        currentLang === 'km'
+          ? `❌ Token មិនត្រឹមត្រូវ: ${result.error}`
+          : `❌ Invalid token: ${result.error}`
+      );
+    }
+  }
+
+  async function testBot() {
+    const token = localStorage.getItem('telegramBotToken');
+
+    if (!token) {
+      showBotStatus('error', currentLang === 'km' ? 'សូមរក្សាទុក Bot Token ជាមុនសិន' : 'Please save a Bot Token first');
+      return;
+    }
+
+    const username = prompt(
+      currentLang === 'km'
+        ? 'បញ្ចូល Telegram username របស់អ្នក (@username) ដើម្បីសាកល្បងផ្ញើសារ:'
+        : 'Enter your Telegram username (@username) to test sending a message:',
+      '@'
+    );
+
+    if (!username) return;
+
+    showBotStatus('info', currentLang === 'km' ? 'កំពុងផ្ញើសារសាកល្បង...' : 'Sending test message...');
+
+    const bot = new TelegramBot(token);
+
+    // First, resolve username to chat ID
+    const chatIdResult = await bot.getUserChatId(username);
+
+    if (!chatIdResult.success) {
+      showBotStatus('error',
+        currentLang === 'km'
+          ? `❌ មិនអាចស្វែងរកអ្នកប្រើប្រាស់: ${chatIdResult.error}`
+          : `❌ Could not find user: ${chatIdResult.error}`
+      );
+      return;
+    }
+
+    // Send test message
+    const sendResult = await bot.sendTestMessage(chatIdResult.chatId, currentLang);
+
+    if (sendResult.success) {
+      showBotStatus('success',
+        currentLang === 'km'
+          ? '✅ សារបានផ្ញើដោយជោគជ័យ! សូមពិនិត្យ Telegram របស់អ្នក។'
+          : '✅ Message sent successfully! Check your Telegram.'
+      );
+    } else {
+      showBotStatus('error',
+        currentLang === 'km'
+          ? `❌ មិនអាចផ្ញើសារ: ${sendResult.error}`
+          : `❌ Could not send message: ${sendResult.error}`
+      );
+    }
+  }
+
+  function viewUpcomingReminders() {
+    const reminders = scheduler.getUpcomingReminders(30);
+    const remindersList = document.getElementById('remindersList');
+
+    if (reminders.length === 0) {
+      remindersList.innerHTML = `<p class="reminders-empty">${t('noUpcomingReminders')}</p>`;
+    } else {
+      remindersList.innerHTML = '';
+
+      reminders.forEach(reminder => {
+        const card = document.createElement('div');
+        card.className = 'reminder-card';
+
+        // Add urgency class
+        if (reminder.daysUntil === 0) {
+          card.classList.add('urgent');
+        } else if (reminder.daysUntil <= 3) {
+          card.classList.add('soon');
+        }
+
+        const daysText = reminder.daysUntil === 0
+          ? t('dueToday')
+          : `${t('dueIn')} ${reminder.daysUntil} ${t('days')}`;
+
+        const urgencyClass = reminder.daysUntil === 0
+          ? 'urgent'
+          : reminder.daysUntil <= 3 ? 'soon' : 'normal';
+
+        card.innerHTML = `
+          <div class="reminder-header">
+            <div class="reminder-customer">${reminder.customerName}</div>
+            <span class="reminder-days ${urgencyClass}">${daysText}</span>
+          </div>
+          <div class="reminder-info">
+            <div class="reminder-info-item">
+              <span class="reminder-info-label">${t('payment')}:</span>
+              <span class="reminder-info-value">#${reminder.paymentNumber}/${reminder.totalPayments}</span>
+            </div>
+            <div class="reminder-info-item">
+              <span class="reminder-info-label">${t('historyAmount')}</span>
+              <span class="reminder-info-value">$${reminder.paymentAmount.toFixed(2)}</span>
+            </div>
+            <div class="reminder-info-item">
+              <span class="reminder-info-label">${t('date')}:</span>
+              <span class="reminder-info-value">${formatDate(reminder.paymentDate)}</span>
+            </div>
+            <div class="reminder-info-item">
+              <span class="reminder-info-label">Telegram:</span>
+              <span class="reminder-info-value">${reminder.telegramUsername}</span>
+            </div>
+          </div>
+        `;
+
+        remindersList.appendChild(card);
+      });
+    }
+
+    remindersSection.style.display = 'block';
+    remindersSection.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function showBotStatus(type, message) {
+    botStatus.className = `bot-status ${type}`;
+    botStatus.textContent = message;
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      botStatus.className = 'bot-status';
+    }, 5000);
+  }
+
   function clearForm() {
     customerNameInput.value = '';
     issuerNameInput.value = '';
     loanAmountInput.value = '';
     interestRateInput.value = '';
     loanTermInput.value = '';
+    telegramUsernameInput.value = '';
+    reminderDaysBeforeInput.value = '3';
+    enableRemindersCheckbox.checked = true;
 
     // Reset start date to today
     const today = new Date();
